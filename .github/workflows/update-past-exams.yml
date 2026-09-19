@@ -1,1 +1,22 @@
+name: Update past exams
 
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * 1"
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Check workflow
+        run: |
+          echo "社会福祉士 過去問自動更新"
+          echo "GitHub Actions OK"
