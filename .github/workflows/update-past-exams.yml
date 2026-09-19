@@ -1,22 +1,210 @@
-name: Update past exams
+name: Update official past exams and deploy Pages
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [main]
   schedule:
-    - cron: "0 0 * * 1"
+    - cron: "17 20 * * 0"
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
 
 jobs:
-  update:
+  build-deploy:
     runs-on: ubuntu-latest
-
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Check workflow
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install scraper dependencies
+        run: pip install requests beautifulsoup4 pypdf
+
+      - name: Fetch and validate official past exams
+        shell: bash
         run: |
-          echo "社会福祉士 過去問自動更新"
-          echo "GitHub Actions OK"
+          cat > /tmp/fetch_past_exams.py <<'PY'
+          import json, re, sys, tempfile, unicodedata
+          from pathlib import Path
+          from urllib.parse import urljoin
+          from datetime import datetime, timezone
+          import requests
+          from bs4 import BeautifulSoup
+          from pypdf import PdfReader
+
+          INDEX='https://www.sssc.or.jp/shakai/past_exam/index.html'
+          UA='Mozilla/5.0 (compatible; GokakuLAB/1.0; +https://github.com/)'
+          S=requests.Session(); S.headers.update({'User-Agent':UA})
+
+          FW_TRANS=str.maketrans('０１２３４５６７８９，','0123456789,')
+          def norm(s):
+              s=unicodedata.normalize('NFKC', s or '')
+              s=s.replace('\xa0',' ').replace('\u3000',' ')
+              return re.sub(r'[ \t]+',' ',s).strip()
+
+          def get(url, binary=False):
+              r=S.get(url, timeout=45); r.raise_for_status()
+              return r.content if binary else r.text
+
+          def discover():
+              soup=BeautifulSoup(get(INDEX),'html.parser')
+              exams=[]
+              for h in soup.find_all('h2'):
+                  hm=re.search(r'第\s*(\d+)\s*回', norm(h.get_text(' ',strip=True)))
+                  if not hm: continue
+                  no=int(hm.group(1)); meta={'examNo':no,'heading':norm(h.get_text(' ',strip=True))}
+                  node=h.find_next_sibling()
+                  while node and getattr(node,'name',None)!='h2':
+                      for a in node.find_all('a',href=True) if hasattr(node,'find_all') else []:
+                          href=urljoin(INDEX,a['href']); label=norm(a.get_text(' ',strip=True))
+                          mm=re.search(r'/no(\d+)/listen_ss_(am|pm)_(\d+)\.html(?:$|\?)',href)
+                          if mm and int(mm.group(1))==no and mm.group(1)==mm.group(3): meta[mm.group(2)]=href
+                          if '合格基準' in label and '正答' in label and '.pdf' in href.lower(): meta['answers']=href
+                      node=node.find_next_sibling()
+                  if all(meta.get(x) for x in ('am','pm','answers')): exams.append(meta)
+              return sorted(exams,key=lambda x:x['examNo'],reverse=True)
+
+          def text_lines(html):
+              soup=BeautifulSoup(html,'html.parser')
+              for tag in soup(['script','style','nav','footer','rt']): tag.decompose()
+              root=soup.find('main') or soup.find(id=re.compile('main|contents?',re.I)) or soup.body or soup
+              headings={norm(h.get_text(' ',strip=True)) for h in root.find_all(['h2','h3','h4'])}
+              headings={h for h in headings if h and not re.search(r'第\s*\d+\s*回',h)}
+              raw=[norm(x) for x in root.get_text('\n',strip=True).splitlines()]
+              lines=[]
+              for x in raw:
+                  if not x: continue
+                  if re.fullmatch(r'[1-5]',x) and lines and re.match(r'^問題\s*\d+', lines[-1]):
+                      lines.append(x)
+                  else: lines.append(x)
+              return lines, headings
+
+          def parse_questions(url, session, exam_no):
+              lines, headings=text_lines(get(url))
+              current_subject=''; blocks=[]; cur=None
+              qre=re.compile(r'^問題\s*(\d+)\s*(.*)$')
+              for line in lines:
+                  if line in headings:
+                      current_subject=line; continue
+                  m=qre.match(line)
+                  if m:
+                      if cur: blocks.append(cur)
+                      cur={'number':int(m.group(1)),'subject':current_subject,'session':session,'lines':[m.group(2).strip()]}
+                  elif cur:
+                      cur['lines'].append(line)
+              if cur: blocks.append(cur)
+              out=[]
+              for b in blocks:
+                  qparts=[]; opts=[]; note=[]; note_mode=False; opt_idx=-1
+                  i=0; ls=b['lines']
+                  while i<len(ls):
+                      line=ls[i]
+                      # Some pages may split option number and text into separate nodes.
+                      if re.fullmatch(r'[1-5]', line) and i+1<len(ls):
+                          line=line+' '+ls[i+1]; i+=1
+                      if re.match(r'^[（(]注',line):
+                          note_mode=True; note.append(line); i+=1; continue
+                      if note_mode:
+                          note.append(line); i+=1; continue
+                      om=re.match(r'^([1-5])\s+(.+)$',line)
+                      if om:
+                          n=int(om.group(1))
+                          if n==len(opts)+1 and n<=5:
+                              opts.append(om.group(2).strip()); opt_idx=n-1; i+=1; continue
+                      if opt_idx>=0:
+                          opts[opt_idx]=(opts[opt_idx]+' '+line).strip()
+                      else:
+                          qparts.append(line)
+                      i+=1
+                  qtext=' '.join(qparts).strip()
+                  if len(opts)!=5:
+                      raise ValueError(f'第{exam_no}回 問題{b["number"]}: 選択肢が{len(opts)}個（5個必要）')
+                  msel=re.search(r'([123])\s*つ選びなさい', qtext)
+                  select_count=int(msel.group(1)) if msel else 1
+                  out.append({'id':f'p{exam_no}_{b["number"]:03d}','number':b['number'],'subject':b['subject'] or '科目未判定','session':session,'q':qtext,'opts':opts,'answers':[],'selectCount':select_count,'note':' '.join(note).strip()})
+              return out
+
+          def parse_answer_pdf(url):
+              data=get(url,binary=True)
+              with tempfile.NamedTemporaryFile(suffix='.pdf') as f:
+                  f.write(data); f.flush(); text='\n'.join((p.extract_text() or '') for p in PdfReader(f.name).pages)
+              text=norm(text.translate(FW_TRANS)).replace(' 正 答 ',' 正答 ')
+              amap={}
+              # Normal PDF extraction gives repeated "問題番号 ... 正 答 ..." rows.
+              for m in re.finditer(r'問題番号\s+([0-9\s]+?)\s+正\s*答\s+([0-9,\s]+)', text):
+                  nums=[int(x) for x in re.findall(r'\d+',m.group(1))]
+                  vals=re.findall(r'[1-5](?:,[1-5])?',m.group(2))
+                  if len(nums)!=len(vals):
+                      raise ValueError(f'正答表の列数不一致: {nums} / {vals}')
+                  for n,v in zip(nums,vals): amap[n]=[int(x) for x in v.split(',')]
+              pm=re.search(r'総得点\s*(\d+)点.{0,120}?得点\s*(\d+)点以上', text)
+              gm=re.search(r'(\d+)科目群.{0,80}?すべて', text)
+              return amap, {'total':int(pm.group(1)),'score':int(pm.group(2)),'groupsRequired':int(gm.group(1)) if gm else None} if pm else {}
+
+          def build_exam(meta):
+              no=meta['examNo']
+              qs=parse_questions(meta['am'],'午前',no)+parse_questions(meta['pm'],'午後',no)
+              amap,passinfo=parse_answer_pdf(meta['answers'])
+              nums=[q['number'] for q in qs]
+              if not nums or nums!=list(range(1,max(nums)+1)):
+                  raise ValueError(f'第{no}回: 問題番号が連続していません: {nums[:5]}...{nums[-5:] if nums else []}')
+              if len(amap)!=len(qs):
+                  missing=[n for n in nums if n not in amap]
+                  raise ValueError(f'第{no}回: 問題{len(qs)}問に対し正答{len(amap)}問。欠落={missing[:20]}')
+              for q in qs:
+                  q['answers']=amap[q['number']]
+                  if len(q['answers'])!=q['selectCount']:
+                      # Official answer count wins; this also protects unusual wording.
+                      q['selectCount']=len(q['answers'])
+              heading=meta.get('heading') or f'第{no}回 社会福祉士国家試験'
+              label=re.sub(r'\s*社会福祉士国家試験.*$','',heading).strip() or f'第{no}回'
+              return {'examNo':no,'label':label,'title':re.sub(r'\s*試験問題.*$','',heading).strip(),'questions':qs,'pass':passinfo,'sourcePage':INDEX,'sourceQuestions':[meta['am'],meta['pm']],'sourceAnswers':meta['answers'],'source':'社会福祉振興・試験センター公式'}
+
+          def main():
+              metas=discover()
+              if not metas: raise SystemExit('過去問一覧から完全な試験データを発見できませんでした')
+              exams=[]; errors=[]
+              for meta in metas:
+                  try:
+                      ex=build_exam(meta); exams.append(ex); print(f'OK 第{ex["examNo"]}回: {len(ex["questions"])}問')
+                  except Exception as e:
+                      errors.append(f'第{meta.get("examNo")}回: {e}'); print('WARN',errors[-1],file=sys.stderr)
+              if not exams: raise SystemExit('正常な試験データが0件です: '+' / '.join(errors))
+              payload={'updated_at':datetime.now(timezone.utc).isoformat(),'source_page':INDEX,'generated_by':'GitHub Actions / Gokaku LAB v6','exams':exams,'warnings':errors}
+              Path('data').mkdir(exist_ok=True)
+              Path('data/past_exams.js').write_text('window.AUTO_PAST_EXAMS = '+json.dumps(payload,ensure_ascii=False,separators=(',',':'))+';\n',encoding='utf-8')
+              Path('data/past_exams.json').write_text(json.dumps(payload,ensure_ascii=False,indent=2),encoding='utf-8')
+              print('generated exams:', [e['examNo'] for e in exams])
+          if __name__=='__main__': main()
+
+          PY
+          python /tmp/fetch_past_exams.py
+
+      - name: Disable Jekyll
+        run: touch .nojekyll
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: .
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
