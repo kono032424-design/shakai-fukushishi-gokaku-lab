@@ -38,6 +38,27 @@ select{width:100%;padding:14px;border:1px solid var(--line);border-radius:14px;b
 .footer{margin-top:20px;text-align:center;font-size:12px;color:#867c8e}
 a{color:#6f54b4}
 @media(max-width:430px){h1{font-size:24px}.question{font-size:18px}button,.btn{font-size:15px}}
+
+.analysis-head{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.subject-row{display:grid;grid-template-columns:minmax(0,1fr) 62px 64px;gap:8px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}
+.subject-row:last-child{border-bottom:0}
+.subject-name{font-weight:750;font-size:14px;line-height:1.35}
+.rate-chip{font-weight:900;text-align:center;padding:6px 7px;border-radius:999px;background:#f3ecfb}
+.rate-good{background:#e8fbf3;color:#247454}
+.rate-mid{background:#fff4d8;color:#8a6012}
+.rate-weak{background:#ffe9ed;color:#b83d52}
+.rate-none{background:#f3f0f5;color:#807789}
+.mini-bar{height:7px;background:#eee8f3;border-radius:999px;overflow:hidden;margin-top:5px}
+.mini-bar>span{display:block;height:100%;background:linear-gradient(90deg,var(--main),var(--main2))}
+.rank-list{margin:0;padding:0;list-style:none}
+.rank-item{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)}
+.rank-item:last-child{border-bottom:0}
+.rank-no{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#f1e9fb;font-weight:900;flex:0 0 auto}
+.rec-box{background:linear-gradient(135deg,#fff0e9,#fff4fb);border:1px solid #f4d6df;border-radius:18px;padding:15px;line-height:1.65}
+.history-row{display:grid;grid-template-columns:1fr 62px 62px 62px;gap:6px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px;align-items:center}
+.history-row:last-child{border-bottom:0}
+#analysisView{display:none}
+
 </style>
 </head>
 <body>
@@ -69,6 +90,8 @@ a{color:#6f54b4}
     <button class="dark" onclick="startMode('all')">🏁 頻出100問チャレンジ</button>
     <div style="height:10px"></div>
     <button class="hot" onclick="startMock()">📝 本番模試129問</button>
+    <div style="height:10px"></div>
+    <button class="primary" onclick="showAnalysis()">📊 成績・弱点分析</button>
   </div>
 
   <div class="card">
@@ -99,7 +122,7 @@ a{color:#6f54b4}
 
   <div class="card">
     <b>🧠 この版に入っている機能</b>
-    <p class="muted">129問のオリジナル練習問題／本番模試（午前84問＋午後45問）／タイマー／19科目／S・Aランク／解説／正答率／間違い自動保存／ブックマーク</p>
+    <p class="muted">129問のオリジナル練習問題／本番模試／19科目別成績／苦手ランキング／今日のおすすめ学習／模試履歴／タイマー／解説／間違い自動保存／ブックマーク</p>
     <button onclick="resetAll()">学習履歴をリセット</button>
   </div>
 
@@ -108,6 +131,45 @@ a{color:#6f54b4}
     このアプリの問題文は学習用に作成したオリジナル問題です。公式過去問そのものの転載ではありません。<br><br>
     第39回は2027年2月7日、19科目・129問（午前84問・午後45問）、五肢択一を基本とする多肢選択形式。通常の試験時間は午前10:00〜12:20、午後14:10〜15:35です。出題基準公表後の重要な法改正等も出題され得るため、法律・制度の数値や要件は試験前に最新版確認が必要です。<br><br>
     公式：<a href="https://www.sssc.or.jp/shakai/" target="_blank">社会福祉振興・試験センター</a>
+  </div>
+</section>
+
+
+<section id="analysisView">
+  <div class="hero">
+    <h1>📊 成績・弱点分析</h1>
+    <div class="sub">19科目の正答率から、今やるべき学習を自動で選びます。</div>
+  </div>
+
+  <div class="card">
+    <div class="analysis-head">
+      <b>🎯 今日のおすすめ</b>
+      <span class="badge S" id="recBadge">分析中</span>
+    </div>
+    <div class="rec-box" id="recommendBox" style="margin-top:12px"></div>
+    <div style="height:10px"></div>
+    <button class="hot" id="recommendStartBtn" onclick="startRecommended()">おすすめ10問を始める</button>
+  </div>
+
+  <div class="card">
+    <b>🔥 苦手科目ランキング</b>
+    <p class="small">正答率・間違い数・回答数を合わせて優先度を算出します。</p>
+    <ul class="rank-list" id="weakRanking"></ul>
+  </div>
+
+  <div class="card">
+    <b>📚 19科目の成績</b>
+    <div id="subjectStats"></div>
+  </div>
+
+  <div class="card" id="mockHistoryCard">
+    <b>📝 模試の履歴</b>
+    <p class="small">これから受けた本番模試を最大10回分保存します。</p>
+    <div id="mockHistory"></div>
+  </div>
+
+  <div class="card">
+    <button onclick="goHomeFromAnalysis()">← ホームに戻る</button>
   </div>
 </section>
 
@@ -131,7 +193,7 @@ a{color:#6f54b4}
   </div>
 </section>
 
-<div class="footer">社会福祉士 合格LAB v3.0｜129問模試版｜2026-09-19</div>
+<div class="footer">社会福祉士 合格LAB v4.0｜129問模試版｜2026-09-19</div>
 </div>
 
 <script>
@@ -140,6 +202,7 @@ const SUBJECTS = ["医学概論", "心理学と心理的支援", "社会学と�
 let session = [], idx = 0, answered = false;
 let examMode=false, examAnswers={}, timerId=null, timeLeft=0;
 const MOCK_KEY='shakai_fukushi_mock_last_v1';
+const MOCK_HISTORY_KEY='shakai_fukushi_mock_history_v1';
 const KEY='shakai_fukushi_lab_v1';
 function load(){try{return JSON.parse(localStorage.getItem(KEY))||{}}catch(e){return {}}}
 function save(s){localStorage.setItem(KEY,JSON.stringify(s))}
@@ -150,6 +213,7 @@ function init(){
   sel.innerHTML=SUBJECTS.map(x=>`<option>${x}</option>`).join('');
   updateStats();
   updateMockCard();
+  seedMockHistory();
 }
 function updateStats(){
   const s=load(); let attempts=0, correct=0, weak=0;
@@ -163,6 +227,135 @@ function priority(q){
   if(!r.attempts) score+=15;
   return score+Math.random()*5;
 }
+
+let recommendedSubject=null;
+
+function subjectSummary(){
+  const s=load();
+  return SUBJECTS.map(subject=>{
+    const qs=QUESTIONS.filter(q=>q.subject===subject);
+    let attempts=0,correct=0,wrong=0,weakQuestions=0;
+    qs.forEach(q=>{
+      const r=s[q.id]||{};
+      attempts += r.attempts||0;
+      correct += r.correct||0;
+      wrong += r.wrong||0;
+      if((r.wrong||0)>(r.correct||0)) weakQuestions++;
+    });
+    const rate=attempts?Math.round(correct/attempts*100):null;
+    // Higher score = higher study priority. Low accuracy + wrong answers + little coverage.
+    const coverage=qs.length ? Math.min(1, attempts/qs.length) : 0;
+    let priorityScore = rate===null ? 82 : (100-rate)*1.15 + Math.min(wrong,20)*2.2 + Math.max(0,1-coverage)*18;
+    return {subject, attempts, correct, wrong, weakQuestions, rate, qCount:qs.length, priorityScore};
+  });
+}
+function rateClass(rate){
+  if(rate===null)return 'rate-none';
+  if(rate>=80)return 'rate-good';
+  if(rate>=60)return 'rate-mid';
+  return 'rate-weak';
+}
+function showAnalysis(){
+  homeView.style.display='none';
+  quizView.style.display='none';
+  analysisView.style.display='block';
+  renderAnalysis();
+  window.scrollTo(0,0);
+}
+function goHomeFromAnalysis(){
+  analysisView.style.display='none';
+  homeView.style.display='block';
+  updateStats();updateMockCard();
+  window.scrollTo(0,0);
+}
+function renderAnalysis(){
+  const rows=subjectSummary();
+  const learned=rows.filter(x=>x.attempts>0);
+  const ranked=[...rows].sort((a,b)=>b.priorityScore-a.priorityScore);
+  const top=ranked[0];
+  recommendedSubject=top?top.subject:null;
+
+  if(top){
+    recBadge.textContent=top.rate===null?'未学習':'優先';
+    recBadge.className='badge '+(top.rate===null?'A':'S');
+    const rateText=top.rate===null?'まだ未学習':`正答率 ${top.rate}%・${top.wrong}回不正解`;
+    recommendBox.innerHTML=`<b style="font-size:19px">${top.subject}</b><br>${rateText}<br><span class="small">この科目のSランクと未回答・間違い問題を優先して10問出します。</span>`;
+    recommendStartBtn.disabled=false;
+  } else {
+    recommendBox.textContent='学習データがまだありません。まず「今日の最重要10問」から始めよう。';
+    recommendStartBtn.disabled=true;
+  }
+
+  weakRanking.innerHTML='';
+  ranked.slice(0,3).forEach((x,i)=>{
+    const li=document.createElement('li');li.className='rank-item';
+    const detail=x.rate===null?'未学習':`正答率 ${x.rate}% ／ 回答 ${x.attempts}`;
+    li.innerHTML=`<span class="rank-no">${i+1}</span><div><b>${x.subject}</b><div class="small">${detail} ／ 苦手問題 ${x.weakQuestions}</div></div>`;
+    weakRanking.appendChild(li);
+  });
+
+  subjectStats.innerHTML='';
+  rows.forEach(x=>{
+    const div=document.createElement('div');div.className='subject-row';
+    const rateText=x.rate===null?'未学習':`${x.rate}%`;
+    const width=x.rate===null?0:x.rate;
+    div.innerHTML=`
+      <div><div class="subject-name">${x.subject}</div><div class="mini-bar"><span style="width:${width}%"></span></div></div>
+      <div class="rate-chip ${rateClass(x.rate)}">${rateText}</div>
+      <div class="small" style="text-align:right">${x.attempts}回答</div>`;
+    subjectStats.appendChild(div);
+  });
+  renderMockHistory();
+}
+function startRecommended(){
+  if(!recommendedSubject){startMode('today');return}
+  analysisView.style.display='none';
+  examMode=false;examAnswers={};stopTimer();
+  const s=load();
+  let qs=QUESTIONS.filter(q=>q.subject===recommendedSubject);
+  qs=[...qs].sort((a,b)=>{
+    const ra=s[a.id]||{}, rb=s[b.id]||{};
+    const pa=(a.rank==='S'?40:0)+(ra.wrong||0)*20-(ra.correct||0)*4+(!(ra.attempts)?18:0);
+    const pb=(b.rank==='S'?40:0)+(rb.wrong||0)*20-(rb.correct||0)*4+(!(rb.attempts)?18:0);
+    return pb-pa;
+  }).slice(0,10);
+  begin(qs);
+}
+function getMockHistory(){
+  try{return JSON.parse(localStorage.getItem(MOCK_HISTORY_KEY))||[]}catch(e){return []}
+}
+function saveMockHistory(arr){
+  localStorage.setItem(MOCK_HISTORY_KEY,JSON.stringify(arr.slice(-10)));
+}
+function seedMockHistory(){
+  const hist=getMockHistory();
+  if(hist.length)return;
+  try{
+    const last=JSON.parse(localStorage.getItem(MOCK_KEY)||'null');
+    if(last)saveMockHistory([last]);
+  }catch(e){}
+}
+function addMockHistory(result){
+  const hist=getMockHistory();
+  hist.push(result);
+  saveMockHistory(hist);
+}
+function renderMockHistory(){
+  const hist=getMockHistory().slice().reverse();
+  if(!hist.length){
+    mockHistory.innerHTML='<div class="notice">まだ模試履歴がありません。129問模試を完走すると、ここに記録されます。</div>';
+    return;
+  }
+  mockHistory.innerHTML='<div class="history-row" style="font-weight:800"><div>受験日</div><div>総合</div><div>午前</div><div>午後</div></div>';
+  hist.forEach(r=>{
+    const d=r.at?new Date(r.at):null;
+    const ds=d&&!isNaN(d)?`${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`:'--';
+    const row=document.createElement('div');row.className='history-row';
+    row.innerHTML=`<div>${ds}</div><div>${r.total}/129</div><div>${r.am}/84</div><div>${r.pm}/45</div>`;
+    mockHistory.appendChild(row);
+  });
+}
+
 function stopTimer(){if(timerId){clearInterval(timerId);timerId=null}}
 function drawTimer(){
   if(!examMode){examTimer.style.display='none';return}
@@ -232,7 +425,7 @@ function answer(i,btn){
   const q=session[idx]; const buttons=[...document.querySelectorAll('.opt')];
   buttons[q.a].classList.add('correct');
   let ok=i===q.a; if(!ok)btn.classList.add('wrong');
-  const [s,r]=rec(q.id);r.attempts++;if(ok)r.correct++;else r.wrong++;save(s);
+  const [s,r]=rec(q.id);r.attempts++;if(ok){r.correct++;r.lastCorrectAt=new Date().toISOString()}else{r.wrong++;r.lastWrongAt=new Date().toISOString()}save(s);
   explain.style.display='block';
   explain.innerHTML=`<b>${ok?'✅ 正解！':'❌ 不正解'}</b><br>${q.exp}`;
   nextBtn.disabled=false;updateStats()
@@ -249,10 +442,14 @@ function finish(){
       const chosen=examAnswers[q.id];const ok=chosen===q.a;
       if(ok){total++;if(i<84)am++;else pm++}
       if(!s[q.id])s[q.id]={attempts:0,correct:0,wrong:0,book:false};
-      s[q.id].attempts++;if(ok)s[q.id].correct++;else s[q.id].wrong++;
+      s[q.id].attempts++;
+      if(ok){s[q.id].correct++;s[q.id].lastCorrectAt=new Date().toISOString()}
+      else{s[q.id].wrong++;s[q.id].lastWrongAt=new Date().toISOString()}
     });
     save(s);
-    localStorage.setItem(MOCK_KEY,JSON.stringify({total,am,pm,at:new Date().toISOString()}));
+    const mockResult={total,am,pm,at:new Date().toISOString()};
+    localStorage.setItem(MOCK_KEY,JSON.stringify(mockResult));
+    addMockHistory(mockResult);
     const pct=Math.round(total/129*100);
     examMode=false;
     alert(`本番模試終了！\n\n総合 ${total}/129（${pct}%）\n午前 ${am}/84\n午後 ${pm}/45\n\n結果を学習履歴に反映しました。`);
@@ -265,12 +462,12 @@ function exitQuiz(){
   if(examMode && !confirm('模試を中断しますか？\n途中の解答は模試結果には保存されません。'))return;
   examMode=false;examAnswers={};stopTimer();goHome();
 }
-function goHome(){stopTimer();examTimer.style.display='none';quizView.style.display='none';homeView.style.display='block';updateStats();updateMockCard();window.scrollTo(0,0)}
+function goHome(){stopTimer();examTimer.style.display='none';quizView.style.display='none';analysisView.style.display='none';homeView.style.display='block';updateStats();updateMockCard();window.scrollTo(0,0)}
 function toggleBookmark(){
   const q=session[idx]; const [s,r]=rec(q.id); r.book=!r.book;save(s);bookmarkBtn.textContent=r.book?'★ 保存済み':'☆ 保存'
 }
 function resetAll(){
-  if(confirm('学習履歴をすべてリセットしますか？')){localStorage.removeItem(KEY);updateStats();alert('リセットしました')}
+  if(confirm('学習履歴をすべてリセットしますか？')){localStorage.removeItem(KEY);localStorage.removeItem(MOCK_KEY);localStorage.removeItem(MOCK_HISTORY_KEY);updateStats();updateMockCard();alert('リセットしました')}
 }
 init();
 </script>
