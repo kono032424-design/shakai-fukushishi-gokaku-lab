@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#c9b6ff">
+<title>社会福祉士 合格LAB</title>
+<style>
+:root{--bg:#fff9ff;--card:#ffffff;--main:#9b7bd8;--main2:#f7b5d8;--ink:#332d3f;--muted:#776f80;--ok:#2d9b75;--ng:#d85d72;--line:#eadff2;}
+*{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#f7efff 0,#fff9ff 38%,#fff 100%);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif}
+.wrap{max-width:760px;margin:auto;padding:18px 14px 100px}
+.hero{background:linear-gradient(135deg,#cbb7ff,#f8bddc);border-radius:24px;padding:20px;box-shadow:0 10px 30px #a88dd633}
+h1{font-size:27px;margin:0 0 6px} .sub{font-size:14px;line-height:1.6}
+.pill{display:inline-block;padding:5px 10px;border-radius:999px;background:#fff9;margin:7px 5px 0 0;font-weight:700;font-size:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;margin-top:14px;box-shadow:0 6px 20px #9b7bd80d}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button,.btn{width:100%;border:0;border-radius:16px;padding:14px 12px;font-weight:800;font-size:16px;background:#f3ecfb;color:var(--ink);cursor:pointer}
+button.primary{background:linear-gradient(135deg,var(--main),#b998ef);color:white}
+button.hot{background:linear-gradient(135deg,#ff896f,#f2608f);color:white}
+button.dark{background:#4f435f;color:white}
+button:disabled{opacity:.55}
+.statrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.stat{background:#faf6ff;border-radius:14px;padding:10px;text-align:center} .stat b{font-size:22px;display:block}
+.small{font-size:12px;color:var(--muted)} .muted{color:var(--muted)}
+select{width:100%;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fff;font-size:16px}
+#quizView{display:none} #homeView{display:block}
+.qhead{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.badge{padding:5px 9px;border-radius:999px;font-size:12px;font-weight:900}
+.S{background:#ffe0dd;color:#b13132} .A{background:#fff0c7;color:#8a6012} .B{background:#e8f1ff;color:#315b97}
+.question{font-size:20px;line-height:1.65;font-weight:800;margin:14px 0}
+.opt{text-align:left;background:#fff;border:2px solid var(--line);margin:9px 0;line-height:1.5}
+.opt.correct{border-color:#4fb48d;background:#ebfff7} .opt.wrong{border-color:#e16c7f;background:#fff0f3}
+.explain{display:none;margin-top:14px;background:#f8f4ff;border-left:5px solid var(--main);padding:14px;border-radius:12px;line-height:1.7}
+.nav{display:flex;gap:10px;margin-top:14px}
+.progress{height:10px;background:#eee6f5;border-radius:999px;overflow:hidden;margin:12px 0} .progress>div{height:100%;background:linear-gradient(90deg,var(--main),var(--main2));width:0}
+.book{width:auto;padding:8px 12px;font-size:14px}
+.notice{font-size:12px;line-height:1.7;color:#6e6675;background:#faf7fc;padding:12px;border-radius:12px}
+.footer{margin-top:20px;text-align:center;font-size:12px;color:#867c8e}
+a{color:#6f54b4}
+@media(max-width:430px){h1{font-size:24px}.question{font-size:18px}button,.btn{font-size:15px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<section id="homeView">
+  <div class="hero">
+    <h1>🐰 社会福祉士 合格LAB</h1>
+    <div class="sub">第39回対策｜頻出テーマ × 苦手問題を優先して出題</div>
+    <span class="pill">試験日 2027/2/7</span><span class="pill">19科目</span><span class="pill">129問</span>
+  </div>
+
+  <div class="card">
+    <b>📊 学習状況</b>
+    <div class="statrow">
+      <div class="stat"><b id="attemptStat">0</b><span class="small">回答数</span></div>
+      <div class="stat"><b id="rateStat">--</b><span class="small">正答率</span></div>
+      <div class="stat"><b id="weakStat">0</b><span class="small">苦手問題</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="grid">
+      <button class="hot" onclick="startMode('today')">🔥 今日の最重要10問</button>
+      <button class="primary" onclick="startMode('S')">⭐ Sランクだけ</button>
+      <button onclick="startMode('weak')">❌ 間違い復習</button>
+      <button onclick="startMode('random')">🎯 ランダム10問</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <b>📚 科目別</b>
+    <div style="height:8px"></div>
+    <select id="subjectSel"></select>
+    <div style="height:10px"></div>
+    <button class="dark" onclick="startSubject()">この科目を学習</button>
+  </div>
+
+  <div class="card">
+    <b>🔥 ランクの見方</b>
+    <p><span class="badge S">S 最優先</span> 出題基準の中心・制度理解・横断的に重要なテーマ</p>
+    <p><span class="badge A">A 重要</span> 基礎として押さえたい頻出テーマ</p>
+    <p><span class="badge B">B 基礎</span> 周辺知識・補強テーマ</p>
+    <div class="notice">※S/A/Bは試験センター公式の予想ではなく、学習優先度を決めるための独自分類です。「出題される」と保証するものではありません。</div>
+  </div>
+
+  <div class="card">
+    <b>🧠 この版に入っている機能</b>
+    <p class="muted">38問のオリジナル練習問題／19科目／S・Aランク／解説／正答率／間違い自動保存／ブックマーク／スマホ保存対応</p>
+    <button onclick="resetAll()">学習履歴をリセット</button>
+  </div>
+
+  <div class="card notice">
+    <b>公式情報を基準に構成</b><br>
+    第39回は2027年2月7日、19科目・129問、五肢択一を基本とする多肢選択形式。出題基準公表後の重要な法改正等も出題され得るため、法律・制度の数値や要件は試験前に最新版確認が必要です。<br><br>
+    公式：<a href="https://www.sssc.or.jp/shakai/" target="_blank">社会福祉振興・試験センター</a>
+  </div>
+</section>
+
+<section id="quizView">
+  <div class="card">
+    <div class="qhead">
+      <span id="rankBadge" class="badge S">S</span>
+      <span id="subjectBadge" class="small"></span>
+      <button id="bookmarkBtn" class="book" onclick="toggleBookmark()">☆ 保存</button>
+    </div>
+    <div class="progress"><div id="progBar"></div></div>
+    <div class="small" id="counter"></div>
+    <div class="question" id="questionText"></div>
+    <div id="options"></div>
+    <div class="explain" id="explain"></div>
+    <div class="nav">
+      <button onclick="goHome()">終了</button>
+      <button class="primary" id="nextBtn" onclick="nextQuestion()" disabled>次の問題 →</button>
+    </div>
+  </div>
+</section>
+
+<div class="footer">社会福祉士 合格LAB Starter v1.0｜最終確認 2026-09-19</div>
+</div>
+
+<script>
+const QUESTIONS = [{"id": "q001", "subject": "医学概論", "rank": "A", "topic": "ICF", "q": "ICF（国際生活機能分類）の考え方として、最も適切なものはどれか。", "opts": ["疾病名だけで人の状態を分類する。", "生活機能と背景因子を相互に関連するものとして捉える。", "障害を本人の能力不足だけで説明する。", "環境因子は評価対象に含めない。", "社会参加は生活機能に含まれない。"], "a": 1, "exp": "ICFは、心身機能・身体構造、活動、参加と、環境因子・個人因子などの背景因子との相互作用として生活機能を捉えます。"}, {"id": "q002", "subject": "医学概論", "rank": "A", "topic": "認知症", "q": "アルツハイマー型認知症について、最も適切なものはどれか。", "opts": ["一般に記憶障害はみられない。", "進行性の認知機能低下を示すことがある。", "意識障害が必ず急激に出現する。", "原因はすべて脳血管障害である。", "若年者には起こらない。"], "a": 1, "exp": "アルツハイマー型認知症では、記憶障害などの認知機能低下が徐々に進行することがあります。急激な意識障害はせん妄などとの鑑別が重要です。"}, {"id": "q003", "subject": "心理学と心理的支援", "rank": "S", "topic": "発達理論", "q": "エリクソンの発達理論で、青年期の主要な心理社会的課題はどれか。", "opts": ["基本的信頼 対 不信", "自律性 対 恥・疑惑", "勤勉性 対 劣等感", "同一性 対 同一性拡散", "世代性 対 停滞"], "a": 3, "exp": "エリクソンは青年期の課題を「同一性（アイデンティティ）対 同一性拡散」としました。"}, {"id": "q004", "subject": "心理学と心理的支援", "rank": "A", "topic": "学習理論", "q": "行動の直後に望ましい刺激を与え、その行動が起こりやすくなることを何というか。", "opts": ["正の強化", "負の強化", "罰", "消去", "般化"], "a": 0, "exp": "望ましい刺激を加えて行動頻度を高めることは正の強化です。負の強化は不快刺激を取り除くことで行動を増やします。"}, {"id": "q005", "subject": "社会学と社会システム", "rank": "A", "topic": "役割", "q": "一人の人が複数の社会的役割を担い、それらの期待が両立しにくい状態を表す概念はどれか。", "opts": ["役割葛藤", "社会化", "アノミー", "準拠集団", "ラベリング"], "a": 0, "exp": "複数の役割期待がぶつかる状態は役割葛藤と呼ばれます。"}, {"id": "q006", "subject": "社会学と社会システム", "rank": "A", "topic": "社会的排除", "q": "社会的排除の説明として、最も適切なものはどれか。", "opts": ["所得の不足だけを指す概念である。", "社会参加や関係から排除される過程も含む。", "個人の性格だけが原因で起こる。", "福祉政策とは関係しない。", "失業とは無関係である。"], "a": 1, "exp": "社会的排除は、所得だけでなく、雇用・教育・社会関係・政治参加など多面的な排除の過程を含む概念です。"}, {"id": "q007", "subject": "社会福祉の原理と政策", "rank": "S", "topic": "社会的包摂", "q": "社会的包摂（ソーシャル・インクルージョン）の考え方として、最も適切なものはどれか。", "opts": ["支援対象者を社会から分離して保護する。", "排除されやすい人も社会参加できるよう条件を整える。", "福祉は家族だけが担う。", "所得保障のみを目的とする。", "市場による解決だけを重視する。"], "a": 1, "exp": "社会的包摂は、社会的に排除されやすい人も含め、誰もが社会の一員として参加できるようにする考え方です。"}, {"id": "q008", "subject": "社会福祉の原理と政策", "rank": "A", "topic": "ニーズ", "q": "福祉政策における「ニーズ」の捉え方として、最も適切なものはどれか。", "opts": ["本人が口にした要望だけを指す。", "専門職の判断だけで決まる。", "本人の生活上の必要性を多面的に捉える。", "市場で購入できるものだけを指す。", "制度利用の有無とは必ず一致する。"], "a": 2, "exp": "ニーズは本人の生活上の必要性を多面的に捉える概念で、表明された要望だけに限定されません。"}, {"id": "q009", "subject": "社会保障", "rank": "S", "topic": "社会保険", "q": "日本の社会保険に一般に含まれるものはどれか。", "opts": ["生活保護", "児童相談", "医療保険", "民生委員活動", "社会福祉協議会の会費"], "a": 2, "exp": "医療保険、年金保険、介護保険、雇用保険、労災保険などが社会保険に含まれます。生活保護は公的扶助です。"}, {"id": "q010", "subject": "社会保障", "rank": "S", "topic": "公的年金", "q": "日本の公的年金制度における基礎年金に関する説明として、最も適切なものはどれか。", "opts": ["国民年金を基礎としている。", "厚生年金加入者は基礎年金と無関係である。", "全額が民間保険会社から給付される。", "医療保険の一部として運営される。", "生活保護制度の一部である。"], "a": 0, "exp": "公的年金の基礎部分は国民年金（基礎年金）です。厚生年金の被保険者も国民年金の第2号被保険者として基礎年金に関係します。"}, {"id": "q011", "subject": "権利擁護を支える法制度", "rank": "S", "topic": "成年後見", "q": "成年後見制度の法定後見に含まれる類型はどれか。", "opts": ["後見・保佐・補助", "後見・調停・補助", "保護・保佐・任意", "後見・代理・調停", "補助・仲裁・保護"], "a": 0, "exp": "法定後見制度には、本人の判断能力の程度に応じて「後見」「保佐」「補助」の3類型があります。"}, {"id": "q012", "subject": "権利擁護を支える法制度", "rank": "S", "topic": "虐待防止", "q": "権利擁護の実践で最も重視すべき考え方として適切なものはどれか。", "opts": ["支援者の価値観を優先する。", "本人の意思や選好を可能な限り尊重する。", "家族の希望が本人の希望より常に優先される。", "危険回避のため自己決定は常に制限できる。", "本人への説明は不要である。"], "a": 1, "exp": "権利擁護では本人の尊厳、意思決定、選好を尊重することが基本です。必要な支援や安全との調整も本人中心で行います。"}, {"id": "q013", "subject": "地域福祉と包括的支援体制", "rank": "S", "topic": "地域共生社会", "q": "地域共生社会の考え方として、最も適切なものはどれか。", "opts": ["制度ごとに相談窓口を完全に分離する。", "住民や多様な主体が関わり、地域で支え合う。", "専門職以外は地域福祉に参加しない。", "高齢者だけを対象にする。", "公的支援を縮小することだけを目的とする。"], "a": 1, "exp": "地域共生社会は、制度・分野の縦割りや「支える側／支えられる側」を超えて、地域の多様な主体が参加し支え合う考え方です。"}, {"id": "q014", "subject": "地域福祉と包括的支援体制", "rank": "A", "topic": "社会福祉協議会", "q": "社会福祉協議会について、最も適切なものはどれか。", "opts": ["裁判所の附属機関である。", "地域福祉の推進を目的とする民間組織である。", "国会の常設委員会である。", "警察行政を担当する。", "医療保険者である。"], "a": 1, "exp": "社会福祉協議会は、地域福祉の推進を目的とする民間の社会福祉組織です。"}, {"id": "q015", "subject": "障害者福祉", "rank": "S", "topic": "障害の社会モデル", "q": "障害の社会モデルの説明として、最も適切なものはどれか。", "opts": ["障害は本人の心身機能だけに原因がある。", "社会的障壁との関係で障害を捉える。", "医学的治療だけで問題は解決する。", "本人の努力不足を重視する。", "環境調整は不要である。"], "a": 1, "exp": "社会モデルでは、個人の機能障害だけではなく、社会の制度・環境・態度などの障壁との関係で障害を捉えます。"}, {"id": "q016", "subject": "障害者福祉", "rank": "S", "topic": "合理的配慮", "q": "合理的配慮の考え方として、最も適切なものはどれか。", "opts": ["障害のある人全員に全く同じ対応をする。", "個別の状況に応じ、過重な負担とならない範囲で必要な調整を行う。", "本人からの意思表明は考慮しない。", "施設内だけで必要になる。", "福祉専門職には関係しない。"], "a": 1, "exp": "合理的配慮は、個別の状況に応じて必要かつ適当な変更・調整を行う考え方で、過重な負担との調整も含まれます。"}, {"id": "q017", "subject": "刑事司法と福祉", "rank": "A", "topic": "更生保護", "q": "更生保護の目的として、最も適切なものはどれか。", "opts": ["犯罪をした人を社会から永久に隔離することだけを目的とする。", "地域社会の中で立ち直りや再犯防止を支援する。", "刑罰を決定する裁判のみを行う。", "医療行為だけを行う。", "被害者支援とは一切関係しない。"], "a": 1, "exp": "更生保護は、犯罪や非行をした人が地域社会で立ち直ることを支え、再犯防止などを図る制度・活動です。"}, {"id": "q018", "subject": "刑事司法と福祉", "rank": "A", "topic": "司法福祉", "q": "刑事司法と福祉の連携で、社会福祉士に期待される役割として適切なものはどれか。", "opts": ["刑罰の量刑を決める。", "生活課題を把握し、必要な福祉サービスにつなぐ。", "逮捕状を発付する。", "有罪・無罪を判断する。", "刑務所の警備のみを担当する。"], "a": 1, "exp": "社会福祉士は、生活困窮、障害、住居、就労、家族関係などを把握し、地域生活への移行や支援機関との連携を担います。"}, {"id": "q019", "subject": "ソーシャルワークの基盤と専門職", "rank": "S", "topic": "自己決定", "q": "ソーシャルワークにおける自己決定の尊重として、最も適切なものはどれか。", "opts": ["支援者が最善と考える選択を本人に従わせる。", "本人が情報を得て選択できるよう支援する。", "本人の希望は記録しない。", "家族の意向のみを確認する。", "失敗の可能性があれば選択肢を示さない。"], "a": 1, "exp": "自己決定の尊重では、本人が必要な情報を得て、自ら考え選択できるよう支援します。"}, {"id": "q020", "subject": "ソーシャルワークの基盤と専門職", "rank": "S", "topic": "倫理", "q": "ソーシャルワーカーが守秘義務と情報共有を検討するときの基本として、最も適切なものはどれか。", "opts": ["支援に関係する情報は無制限に共有してよい。", "本人の同意や法的根拠、共有の必要性を検討する。", "家族には必ず全情報を伝える。", "記録は残さない。", "多職種連携では守秘義務は消滅する。"], "a": 1, "exp": "情報共有では本人の同意を基本に、法的根拠、目的、必要最小限性などを検討します。多職種連携でも守秘義務への配慮は必要です。"}, {"id": "q021", "subject": "ソーシャルワークの理論と方法", "rank": "S", "topic": "ストレングス", "q": "ストレングス視点として、最も適切なものはどれか。", "opts": ["問題や欠点だけに焦点を当てる。", "本人や環境が持つ強み・資源・可能性にも注目する。", "専門職が解決策を一方的に決める。", "過去の失敗だけを分析する。", "社会資源の活用を避ける。"], "a": 1, "exp": "ストレングス視点では、本人・家族・地域などが持つ強み、資源、能力、可能性に注目して支援します。"}, {"id": "q022", "subject": "ソーシャルワークの理論と方法", "rank": "S", "topic": "エコロジカル", "q": "エコロジカルな視点でのアセスメントとして、最も適切なものはどれか。", "opts": ["本人だけを問題の原因として捉える。", "本人と環境との相互作用を捉える。", "制度や地域資源は評価しない。", "心理面のみを見る。", "家族関係を除外する。"], "a": 1, "exp": "エコロジカルな視点は、人と環境の相互作用に着目し、家族、地域、制度、社会資源なども含めてアセスメントします。"}, {"id": "q023", "subject": "社会福祉調査の基礎", "rank": "S", "topic": "量的調査", "q": "量的調査の特徴として、最も適切なものはどれか。", "opts": ["数値化されたデータを統計的に分析することが多い。", "対象者の語りだけを必ず用いる。", "標本抽出とは無関係である。", "質問紙は使用できない。", "仮説の検討には使えない。"], "a": 0, "exp": "量的調査では、質問紙などで得た数値化可能なデータを統計的に分析する方法がよく用いられます。"}, {"id": "q024", "subject": "社会福祉調査の基礎", "rank": "A", "topic": "信頼性・妥当性", "q": "測定の「信頼性」の説明として、最も適切なものはどれか。", "opts": ["測りたい概念を適切に測れている程度", "繰り返し測定したときの結果の安定性や一貫性", "調査対象者の人数の多さ", "研究費の多さ", "研究者の知名度"], "a": 1, "exp": "信頼性は測定の安定性・一貫性に関する概念です。測りたいものを適切に測れているかは妥当性です。"}, {"id": "q025", "subject": "高齢者福祉", "rank": "S", "topic": "介護保険", "q": "介護保険制度の保険者は誰か。", "opts": ["国", "都道府県のみ", "市町村及び特別区", "社会福祉協議会", "年金事務所"], "a": 2, "exp": "介護保険の保険者は市町村および特別区です。国や都道府県は制度運営を支援する役割を持ちます。"}, {"id": "q026", "subject": "高齢者福祉", "rank": "S", "topic": "地域包括支援センター", "q": "地域包括支援センターの業務として、最も適切なものはどれか。", "opts": ["刑事裁判を行う。", "高齢者の総合相談や権利擁護などを担う。", "国民年金の裁定だけを行う。", "医師免許を交付する。", "児童相談所の措置決定を代行する。"], "a": 1, "exp": "地域包括支援センターは、総合相談支援、権利擁護、介護予防ケアマネジメント、包括的・継続的ケアマネジメント支援などを担います。"}, {"id": "q027", "subject": "児童・家庭福祉", "rank": "S", "topic": "子どもの権利", "q": "子どもの権利を尊重した支援として、最も適切なものはどれか。", "opts": ["年齢にかかわらず子どもの意見は聞かない。", "子どもの年齢や発達に応じて意見を聴き、考慮する。", "保護者の意見だけで決定する。", "説明は成人にだけ行う。", "安全確保より秘密保持を常に優先する。"], "a": 1, "exp": "子どもの権利擁護では、年齢・発達に応じて子どもの意見を聴き、意思を尊重することが重要です。安全確保との調整も必要です。"}, {"id": "q028", "subject": "児童・家庭福祉", "rank": "S", "topic": "児童虐待", "q": "児童虐待への対応で、最も適切なものはどれか。", "opts": ["確証が得られるまで関係機関に相談しない。", "子どもの安全を優先し、必要に応じて関係機関と連携する。", "家庭内の問題なので支援者は関与しない。", "子ども本人には必ず責任がある。", "虐待は身体的虐待だけを指す。"], "a": 1, "exp": "虐待対応では子どもの安全確保が最優先です。虐待には身体的、性的、ネグレクト、心理的虐待などがあり、必要に応じ関係機関と連携します。"}, {"id": "q029", "subject": "貧困に対する支援", "rank": "S", "topic": "生活保護", "q": "生活保護制度の基本原理の一つとして適切なものはどれか。", "opts": ["無差別平等", "拠出比例", "市場優先", "家族責任絶対", "地域限定"], "a": 0, "exp": "生活保護法には国家責任、無差別平等、最低生活保障、補足性の原理があります。"}, {"id": "q030", "subject": "貧困に対する支援", "rank": "S", "topic": "生活困窮者支援", "q": "生活困窮者への相談支援で重要な姿勢として、最も適切なものはどれか。", "opts": ["経済面だけを確認する。", "住まい、就労、家族、健康など生活全体を捉える。", "制度名を一つだけ紹介して終了する。", "本人の希望を確認しない。", "他機関との連携を避ける。"], "a": 1, "exp": "生活困窮は複合的な課題を伴うことが多いため、生活全体を捉え、本人の意向を踏まえながら必要な機関・制度につなぐことが重要です。"}, {"id": "q031", "subject": "保健医療と福祉", "rank": "A", "topic": "多職種連携", "q": "保健医療領域での多職種連携として、最も適切なものはどれか。", "opts": ["各職種が情報を一切共有せず独立して支援する。", "本人の目標を共有し、役割分担しながら連携する。", "医師以外は支援方針に関与しない。", "退院後の生活は検討しない。", "本人や家族への説明は行わない。"], "a": 1, "exp": "多職種連携では、本人の意向や目標を中心に、必要な情報を適切に共有し、役割を調整しながら支援します。"}, {"id": "q032", "subject": "保健医療と福祉", "rank": "A", "topic": "退院支援", "q": "退院支援における社会福祉士の役割として適切なものはどれか。", "opts": ["診断名を確定する。", "退院後の生活課題や社会資源を確認し、関係機関と調整する。", "手術の執刀を行う。", "薬剤を処方する。", "検査結果だけを説明する。"], "a": 1, "exp": "医療ソーシャルワーカー等の社会福祉士は、退院後の住居、介護、経済、家族、福祉サービスなどを調整し、地域生活を支援します。"}, {"id": "q033", "subject": "ソーシャルワークの基盤と専門職（専門）", "rank": "S", "topic": "専門職連携", "q": "専門職連携において社会福祉士が行う調整として、最も適切なものはどれか。", "opts": ["他職種の専門性を否定する。", "本人のニーズを中心に各職種の役割を調整する。", "支援目標を共有しない。", "会議では本人の意向を扱わない。", "社会資源の情報は共有しない。"], "a": 1, "exp": "専門職連携では、本人中心の目標を共有し、各専門職の強みを生かして役割を調整します。"}, {"id": "q034", "subject": "ソーシャルワークの基盤と専門職（専門）", "rank": "A", "topic": "スーパービジョン", "q": "ソーシャルワークのスーパービジョンの機能として一般に挙げられるものはどれか。", "opts": ["教育的機能", "司法的機能のみ", "診断書作成機能", "課税機能", "保険給付決定機能"], "a": 0, "exp": "スーパービジョンには一般に教育的・支持的・管理的機能があるとされ、実践力の向上や専門職支援に役立ちます。"}, {"id": "q035", "subject": "ソーシャルワークの理論と方法（専門）", "rank": "S", "topic": "ケースマネジメント", "q": "ケースマネジメントの説明として、最も適切なものはどれか。", "opts": ["一つの機関だけで支援を完結させる。", "複数のニーズと社会資源を調整し、継続的に支援する。", "本人との面接を行わない。", "支援計画は作成しない。", "モニタリングは行わない。"], "a": 1, "exp": "ケースマネジメントは、複合的ニーズを把握し、支援計画、社会資源の調整、モニタリング、評価などを継続的に行います。"}, {"id": "q036", "subject": "ソーシャルワークの理論と方法（専門）", "rank": "S", "topic": "危機介入", "q": "危機介入の初期対応として、最も優先度が高いものはどれか。", "opts": ["長期的な人生目標だけを検討する。", "安全性と緊急性を確認する。", "本人の感情を扱わない。", "支援者一人だけで対応する。", "利用可能な支援資源を確認しない。"], "a": 1, "exp": "危機状況では、まず生命・身体の安全や緊急性を評価し、必要な支援体制を確保することが重要です。"}, {"id": "q037", "subject": "福祉サービスの組織と経営", "rank": "A", "topic": "PDCA", "q": "PDCAサイクルの「C」が表すものはどれか。", "opts": ["計画", "実行", "評価・点検", "改善", "統合"], "a": 2, "exp": "PDCAは Plan（計画）→Do（実行）→Check（評価・点検）→Act（改善）のサイクルです。"}, {"id": "q038", "subject": "福祉サービスの組織と経営", "rank": "S", "topic": "リスクマネジメント", "q": "福祉サービスにおけるリスクマネジメントとして、最も適切なものはどれか。", "opts": ["事故が起こった職員だけを責める。", "ヒヤリ・ハットも含めて原因を分析し、再発防止につなげる。", "事故情報は組織内で共有しない。", "利用者への説明は不要である。", "手順の見直しは行わない。"], "a": 1, "exp": "リスクマネジメントでは、個人責任だけでなく組織的要因を分析し、ヒヤリ・ハットや事故情報を活用して再発防止・安全向上につなげます。"}];
+const SUBJECTS = ["医学概論", "心理学と心理的支援", "社会学と社会システム", "社会福祉の原理と政策", "社会保障", "権利擁護を支える法制度", "地域福祉と包括的支援体制", "障害者福祉", "刑事司法と福祉", "ソーシャルワークの基盤と専門職", "ソーシャルワークの理論と方法", "社会福祉調査の基礎", "高齢者福祉", "児童・家庭福祉", "貧困に対する支援", "保健医療と福祉", "ソーシャルワークの基盤と専門職（専門）", "ソーシャルワークの理論と方法（専門）", "福祉サービスの組織と経営"];
+let session = [], idx = 0, answered = false;
+const KEY='shakai_fukushi_lab_v1';
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||{}}catch(e){return {}}}
+function save(s){localStorage.setItem(KEY,JSON.stringify(s))}
+function rec(id){let s=load(); if(!s[id])s[id]={attempts:0,correct:0,wrong:0,book:false}; return [s,s[id]]}
+function shuffle(a){return [...a].sort(()=>Math.random()-.5)}
+function init(){
+  const sel=document.getElementById('subjectSel');
+  sel.innerHTML=SUBJECTS.map(x=>`<option>${x}</option>`).join('');
+  updateStats();
+}
+function updateStats(){
+  const s=load(); let attempts=0, correct=0, weak=0;
+  Object.values(s).forEach(r=>{attempts+=r.attempts||0;correct+=r.correct||0;if((r.wrong||0)>(r.correct||0))weak++});
+  attemptStat.textContent=attempts; rateStat.textContent=attempts?Math.round(correct/attempts*100)+'%':'--'; weakStat.textContent=weak;
+}
+function priority(q){
+  const r=load()[q.id]||{attempts:0,correct:0,wrong:0};
+  let score=q.rank==='S'?100:q.rank==='A'?60:30;
+  score += (r.wrong||0)*25 - (r.correct||0)*6;
+  if(!r.attempts) score+=15;
+  return score+Math.random()*5;
+}
+function startMode(mode){
+  let arr=[];
+  const s=load();
+  if(mode==='today') arr=[...QUESTIONS].sort((a,b)=>priority(b)-priority(a)).slice(0,10);
+  if(mode==='S') arr=shuffle(QUESTIONS.filter(q=>q.rank==='S'));
+  if(mode==='random') arr=shuffle(QUESTIONS).slice(0,10);
+  if(mode==='weak') arr=QUESTIONS.filter(q=>{const r=s[q.id]; return r && r.wrong>r.correct});
+  if(mode==='weak' && !arr.length){alert('まだ苦手問題がありません。まず問題を解いてみよう！');return}
+  begin(arr);
+}
+function startSubject(){begin(shuffle(QUESTIONS.filter(q=>q.subject===subjectSel.value)))}
+function begin(arr){session=arr;idx=0;homeView.style.display='none';quizView.style.display='block';render()}
+function render(){
+  answered=false;nextBtn.disabled=true;
+  const q=session[idx]; if(!q){finish();return}
+  rankBadge.textContent=q.rank+'ランク'; rankBadge.className='badge '+q.rank;
+  subjectBadge.textContent=q.subject+'｜'+q.topic;
+  counter.textContent=`${idx+1} / ${session.length}`;
+  progBar.style.width=(idx/session.length*100)+'%';
+  questionText.textContent=q.q;
+  options.innerHTML='';
+  q.opts.forEach((o,i)=>{
+    const b=document.createElement('button');b.className='opt';b.textContent=`${i+1}. ${o}`;b.onclick=()=>answer(i,b);options.appendChild(b)
+  });
+  explain.style.display='none';explain.innerHTML='';
+  const r=load()[q.id]; bookmarkBtn.textContent=r&&r.book?'★ 保存済み':'☆ 保存';
+}
+function answer(i,btn){
+  if(answered)return; answered=true;
+  const q=session[idx]; const buttons=[...document.querySelectorAll('.opt')];
+  buttons[q.a].classList.add('correct');
+  let ok=i===q.a; if(!ok)btn.classList.add('wrong');
+  const [s,r]=rec(q.id);r.attempts++;if(ok)r.correct++;else r.wrong++;save(s);
+  explain.style.display='block';
+  explain.innerHTML=`<b>${ok?'✅ 正解！':'❌ 不正解'}</b><br>${q.exp}`;
+  nextBtn.disabled=false;updateStats()
+}
+function nextQuestion(){idx++; if(idx>=session.length)finish();else render()}
+function finish(){
+  alert('このセットは終了！ 学習履歴に保存しました。');
+  goHome()
+}
+function goHome(){quizView.style.display='none';homeView.style.display='block';updateStats();window.scrollTo(0,0)}
+function toggleBookmark(){
+  const q=session[idx]; const [s,r]=rec(q.id); r.book=!r.book;save(s);bookmarkBtn.textContent=r.book?'★ 保存済み':'☆ 保存'
+}
+function resetAll(){
+  if(confirm('学習履歴をすべてリセットしますか？')){localStorage.removeItem(KEY);updateStats();alert('リセットしました')}
+}
+init();
+</script>
+</body></html>
